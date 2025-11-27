@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Personal Finance Advisor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> AI Personal Finance Advisor</h1>
+            <p>Get personalized financial advice powered by AI agents</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Input Form -->
+            <div class="form-container">
+                <h2><i class="fas fa-chart-line"></i> Financial Information</h2>
+                
+                <form id="financeForm">
+                    <div class="form-group">
+                        <label for="income">Monthly Income (₹)</label>
+                        <input type="number" id="income" name="income" required 
+                               placeholder="Enter monthly income">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="expenses">Expenses (comma separated key:value)</label>
+                        <input type="text" id="expenses" name="expenses" required
+                               placeholder="rent:15000, food:6000, transport:3000, utilities:2000">
+                        <small class="helper-text">Format: category:amount, category:amount</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="risk_level">Risk Level</label>
+                        <select id="risk_level" name="risk_level">
+                            <option value="Low">Low - Conservative</option>
+                            <option value="Medium" selected>Medium - Balanced</option>
+                            <option value="High">High - Aggressive</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="debt">Current Debt (₹) - Optional</label>
+                        <input type="number" id="debt" name="debt" 
+                               placeholder="Enter total debt amount">
+                    </div>
+
+                    <button type="submit" id="analyzeBtn">
+                        <i class="fas fa-chart-pie"></i> Analyze My Finances
+                    </button>
+                </form>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>AI agents are analyzing your finances...</p>
+            </div>
+
+            <!-- Results -->
+            <div id="results" class="results-container hidden">
+                <h2><i class="fas fa-file-alt"></i> Your Financial Analysis</h2>
+                
+                <!-- Results will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
