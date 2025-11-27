@@ -18,7 +18,7 @@ services:
     env: python
     plan: free
     buildCommand: cd flask-frontend && pip install -r requirements.txt
-    startCommand: cd flask-frontend && gunicorn app:app --bind 0.0.0.0:$PORT
+    startCommand: cd backend && uvicorn main:app --reload --reload-dir backend --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
