@@ -108,21 +108,50 @@ def transform_backend_response(backend_data, income, expenses_dict, debt):
     # Calculate total expenses
     total_expenses = sum(expenses_dict.values()) if expenses_dict else 0
     
+    # Use backend calculations if available, otherwise calculate properly
+    needs_percentage = backend_data.get('needs_percentage')
+    wants_percentage = backend_data.get('wants_percentage') 
+    savings_percentage = backend_data.get('savings_percentage')
+    
+    # If backend didn't provide allocation percentages, calculate them
+    if needs_percentage is None or wants_percentage is None or savings_percentage is None:
+        if income > 0:
+            # Calculate based on actual expenses vs income
+            savings_percentage = min(100, max(0, ((income - total_expenses) / income) * 100))
+            needs_percentage = min(100 - savings_percentage, (total_expenses / income) * 100)
+            wants_percentage = max(0, 100 - needs_percentage - savings_percentage)
+        else:
+            needs_percentage = 50
+            wants_percentage = 30
+            savings_percentage = 20
+    
+    # Get recommended savings from backend or calculate
+    recommended_savings = backend_data.get('recommended_monthly_savings', income * 0.2)
+    
+    # Get tips from backend or use defaults
+    backend_tips = backend_data.get('tips', [])
+    if not backend_tips:
+        backend_tips = [
+            "Start with small savings goals",
+            "Track your expenses regularly",
+            f"Aim to save at least 20% of your income (₹{income * 0.2:,.0f})"
+        ]
+    
     # Create the structure your frontend expects
     results = {
         "budget_plan": {
             "current_allocation": {
-                "needs_percentage": backend_data.get('needs_percentage', 50),
-                "wants_percentage": backend_data.get('wants_percentage', 30),
-                "savings_percentage": backend_data.get('savings_percentage', 20)
+                "needs_percentage": round(needs_percentage, 1),
+                "wants_percentage": round(wants_percentage, 1),
+                "savings_percentage": round(savings_percentage, 1)
             },
             "recommended_allocation_50_30_20": {
                 "needs": 50,
                 "wants": 30,
                 "savings": 20
             },
-            "recommended_monthly_savings": backend_data.get('recommended_savings', income * 0.2),
-            "tips": backend_data.get('tips', ['Start with small savings goals', 'Track your expenses regularly'])
+            "recommended_monthly_savings": recommended_savings,
+            "tips": backend_tips
         },
         "investment_plan": {
             "portfolio": backend_data.get('portfolio', [
@@ -135,28 +164,28 @@ def transform_backend_response(backend_data, income, expenses_dict, debt):
                 {
                     "asset": "Index Funds",
                     "allocation%": 40,
-                    "amount": income * 0.4,
+                    "amount": recommended_savings * 0.4,
                     "notes": "Diversified stock market investment"
                 },
                 {
                     "asset": "Bonds",
                     "allocation%": 30,
-                    "amount": income * 0.3,
+                    "amount": recommended_savings * 0.3,
                     "notes": "Fixed income for stability"
                 },
                 {
                     "asset": "Real Estate",
                     "allocation%": 10,
-                    "amount": income * 0.1,
+                    "amount": recommended_savings * 0.1,
                     "notes": "Real estate investment trusts"
                 }
             ]),
-            "important_considerations": backend_data.get('considerations', [
+            "important_considerations": backend_data.get('important_considerations', [
                 'Consult with a financial advisor',
                 'Consider your risk tolerance when investing'
             ])
         },
-        "expense_optimizations": backend_data.get('optimizations', [
+        "expense_optimizations": backend_data.get('expense_optimizations', [
             {
                 "action": "Review monthly subscriptions",
                 "estimated_savings": total_expenses * 0.1,
@@ -169,15 +198,14 @@ def transform_backend_response(backend_data, income, expenses_dict, debt):
             }
         ]),
         "debt_plan": {
-            "status": "Good" if debt == 0 or (debt / income) < 0.3 else "Needs Attention",
-            "estimated_months_to_clear": backend_data.get('debt_clear_months', 12 if debt > 0 else 0),
-            "recommended_strategy": backend_data.get('debt_strategy', 'Snowball method' if debt > 0 else 'No debt - maintain good habits')
+            "status": backend_data.get('debt_plan', {}).get('status', 'Good' if debt == 0 or (debt / income) < 0.3 else 'Needs Attention'),
+            "estimated_months_to_clear": backend_data.get('debt_plan', {}).get('estimated_months_to_clear', 12 if debt > 0 else 0),
+            "recommended_strategy": backend_data.get('debt_plan', {}).get('recommended_strategy', 'Snowball method' if debt > 0 else 'No debt - maintain good habits')
         },
-        "financial_health_score": backend_data.get('health_score', 75)
+        "financial_health_score": backend_data.get('financial_health_score', 75)
     }
     
     return results
-
 def generate_fallback_analysis(data):
     """Generate basic analysis when backend is unavailable - matches frontend structure"""
     
