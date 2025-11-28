@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from backend.models import FinanceInput
-from backend.agents.crewai_orchestrator import FinancialCrewOrchestrator
-import os  # ← ADD THIS
-import logging  # ← ADD THIS
+from models import FinanceInput  # ← CHANGED
+from agents.crewai_orchestrator import FinancialCrewOrchestrator  # ← CHANGED
+import os
+import logging
 
 # Add logging for production
 logging.basicConfig(level=logging.INFO)
@@ -17,8 +17,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5000", 
         "http://127.0.0.1:5000",
-        "https://your-frontend-url.onrender.com",  # ← ADD YOUR RENDER URL
-        "*"  # For testing
+        "https://your-frontend-url.onrender.com",
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -75,11 +75,11 @@ async def fallback_analysis(fin: FinanceInput):
     logger.info("🔄 CrewAI failed, using fallback analysis...")
     
     try:
-        from backend.agents.budget_agent import analyze_budget
-        from backend.agents.expenses_agent import optimize_expenses
-        from backend.agents.investment_agent import suggest_investments
-        from backend.agents.debt_agent import plan_debt_repayment
-        from backend.agents.health_agent import financial_health_score
+        from agents.budget_agent import analyze_budget  # ← CHANGED
+        from agents.expenses_agent import optimize_expenses  # ← CHANGED
+        from agents.investment_agent import suggest_investments  # ← CHANGED
+        from agents.debt_agent import plan_debt_repayment  # ← CHANGED
+        from agents.health_agent import financial_health_score  # ← CHANGED
         
         expenses = dict(fin.expenses or {})
         total_expenses = sum(expenses.values())
@@ -111,5 +111,5 @@ async def fallback_analysis(fin: FinanceInput):
 # Add this for production deployment
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))  # ← Render provides PORT
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
