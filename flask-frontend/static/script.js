@@ -138,98 +138,142 @@ function generateLocalFallback(data) {
         totalExpenses = Object.values(expenses).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
     }
     
-    const savings = income - totalExpenses;
-    const savingsRate = income > 0 ? (savings / income) * 100 : 0;
+    const actualSavings = income - totalExpenses;
+    const savingsRate = income > 0 ? (actualSavings / income) * 100 : 0;
+    
+    // 🚨 KEY FIX: JUST USE ACTUAL SAVINGS - no 20% rule!
+    const recommendedMonthlySavings = actualSavings;
     
     // Risk-based adjustments
     const riskMultiplier = riskLevel === 'High' ? 1.4 : riskLevel === 'Low' ? 0.6 : 1.0;
     
-    // Calculate monthly investment amounts (based on monthly savings)
-    const monthlySavings = Math.max(savings, income * 0.2);
+    // Emergency fund target
+    const emergencyFundTarget = totalExpenses * 4;
     
-    // Emergency fund target (3-6 months of expenses)
-    const emergencyFundTarget = totalExpenses * 4; // 4 months as a reasonable target
-    
+    // Calculate investment amounts based on ACTUAL savings
+    const monthlyInvestmentPool = recommendedMonthlySavings * 0.6;
+
+    // Smart tips based on actual situation
+    let tips = [];
+    if (savingsRate > 50) {
+        tips = [
+            `Exceptional! You're saving ${savingsRate.toFixed(1)}% of your income (₹${actualSavings.toLocaleString()})`,
+            "You're saving much more than the typical 20% target",
+            "Focus on investing your substantial savings"
+        ];
+    } else if (savingsRate >= 20) {
+        tips = [
+            `Great! You're saving ${savingsRate.toFixed(1)}% of your income`,
+            "You're meeting or exceeding savings goals",
+            "Consider automating your investments"
+        ];
+    } else {
+        tips = [
+            `Current savings: ${savingsRate.toFixed(1)}% (₹${actualSavings.toLocaleString()})`,
+            "Aim to increase your savings rate gradually",
+            "Review expenses for optimization opportunities"
+        ];
+    }
+
     return {
         budget_plan: {
             current_allocation: {
-                needs_percentage: 55,
-                wants_percentage: 30,
-                savings_percentage: 15
+                needs_percentage: income > 0 ? (totalExpenses / income) * 100 : 0,
+                wants_percentage: 0,
+                savings_percentage: savingsRate
             },
             recommended_allocation_50_30_20: {
                 needs: 50,
                 wants: 30,
                 savings: 20
             },
-            recommended_monthly_savings: monthlySavings,
-            tips: [
-                `Great job! Your monthly savings potential is ₹${Math.max(savings, 0).toLocaleString()}`,
-                "Follow the proven 50/30/20 budget rule for optimal financial health",
-                "Priority: Build a 3-6 month emergency fund for financial security",
-                "Track your expenses weekly to identify spending patterns",
-                "Consider automating your savings for consistent results"
-            ]
+            recommended_monthly_savings: recommendedMonthlySavings, // 🚨 Just actual savings
+            tips: tips
         },
         investment_plan: {
             portfolio: [
                 {
                     asset: "Emergency Fund",
-                    "allocation%": 25,
+                    "allocation%": 20,
                     amount: emergencyFundTarget,
-                    notes: `Essential safety net - ${Math.round(emergencyFundTarget/totalExpenses)} months of living expenses`
+                    notes: `${Math.round(emergencyFundTarget/totalExpenses)} months expenses`
                 },
                 {
-                    asset: "Stock Market",
-                    "allocation%": Math.round(35 * riskMultiplier),
-                    amount: monthlySavings * 0.35 * riskMultiplier,
-                    notes: "Diversified index funds for long-term growth"
+                    asset: "Index Funds",
+                    "allocation%": Math.round(40 * riskMultiplier),
+                    amount: monthlyInvestmentPool * 0.4 * riskMultiplier,
+                    notes: "Diversified stock investment"
                 },
                 {
                     asset: "Bonds",
                     "allocation%": Math.round(30 / riskMultiplier),
-                    amount: monthlySavings * 0.3 / riskMultiplier,
-                    notes: "Stable government and corporate bonds"
+                    amount: monthlyInvestmentPool * 0.3 / riskMultiplier,
+                    notes: "Fixed income stability"
                 },
                 {
                     asset: "Real Estate",
                     "allocation%": 10,
-                    amount: monthlySavings * 0.1,
-                    notes: "REITs for real estate exposure without property management"
+                    amount: monthlyInvestmentPool * 0.1,
+                    notes: "Real estate investment trusts"
                 }
             ],
             important_considerations: [
-                `Your ${riskLevel} risk profile has been considered in portfolio allocation`,
-                "Diversify across different asset classes to manage risk",
-                "Review and rebalance your investments every 6-12 months",
-                "Consider tax-advantaged accounts for better returns"
+                `Your ${riskLevel} risk profile applied`,
+                "Rebalance portfolio annually"
             ]
         },
         expense_optimizations: [
             {
-                action: "Review monthly subscriptions",
-                estimated_savings: totalExpenses * 0.15,
-                reason: "Identify and cancel unused streaming services and memberships"
+                action: "Review subscriptions",
+                estimated_savings: totalExpenses * 0.1,
+                reason: "Cancel unused services"
             },
             {
-                action: "Smart grocery planning",
+                action: "Meal planning",
                 estimated_savings: totalExpenses * 0.08,
-                reason: "Plan meals weekly and buy in bulk to reduce food costs"
-            },
-            {
-                action: "Energy efficiency improvements",
-                estimated_savings: totalExpenses * 0.05,
-                reason: "Switch to LED bulbs and optimize utility usage"
+                reason: "Reduce food costs"
             }
         ],
         debt_plan: {
-            status: debt === 0 ? "Excellent - Debt Free!" : debt < income * 0.3 ? "Manageable" : "Needs Attention",
-            estimated_months_to_clear: debt > 0 ? Math.ceil(debt / (income * 0.15)) : 0,
-            recommended_strategy: debt === 0 ? "Maintain your debt-free financial health!" : "Avalanche method: Focus on highest interest debt first for maximum savings"
+            status: debt === 0 ? "Excellent - Debt Free!" : "Manageable Debt",
+            estimated_months_to_clear: 0,
+            recommended_strategy: "Maintain your debt-free financial health!"
         },
-        financial_health_score: Math.min(95, Math.max(40, 60 + (savingsRate * 0.3) - (debt/income * 25)))
+        financial_health_score: Math.min(100, Math.max(40, 70 + (savingsRate * 0.3)))
     };
 }
+
+function overrideSavingsCalculation(results, income, expensesText) {
+    console.log('🚨 OVERRIDE ACTIVATED - Calculating actual savings');
+    
+    // Calculate actual savings from raw form data
+    let totalExpenses = 0;
+    if (expensesText) {
+        expensesText.split(',').forEach(pair => {
+            if (pair.includes(':')) {
+                const parts = pair.split(':');
+                if (parts.length === 2) {
+                    const value = parseFloat(parts[1].trim());
+                    if (!isNaN(value)) {
+                        totalExpenses += value;
+                    }
+                }
+            }
+        });
+    }
+    
+    const actualSavings = income - totalExpenses;
+    console.log(`🔍 OVERRIDE CALCULATION: Income: ₹${income}, Expenses: ₹${totalExpenses}, Actual Savings: ₹${actualSavings}`);
+    
+    // 🎯 FORCE the correct savings value
+    if (results.budget_plan) {
+        results.budget_plan.recommended_monthly_savings = actualSavings;
+        console.log(`✅ OVERRIDE SUCCESS: Set savings to ₹${actualSavings}`);
+    }
+    
+    return results;
+}
+
 
 function displayResults(results) {
     console.log('Displaying results:', results);

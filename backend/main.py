@@ -30,6 +30,16 @@ async def analyze(fin: FinanceInput):
     try:
         expenses = dict(fin.expenses or {})
         
+        # 🚨 ADD DEBUG CALCULATIONS
+        total_expenses = sum(expenses.values())
+        actual_savings = fin.income - total_expenses
+        logger.info(f"🔍 DEBUG CALCULATIONS:")
+        logger.info(f"🔍 Income: ₹{fin.income}")
+        logger.info(f"🔍 Expenses: ₹{total_expenses}")
+        logger.info(f"🔍 Actual Savings: ₹{actual_savings}")
+        logger.info(f"🔍 20% Rule: ₹{fin.income * 0.2}")
+        logger.info(f"🔍 Should Recommend: ₹{max(actual_savings, fin.income * 0.2)}")
+
         logger.info(f"🚀 Processing request with CrewAI Agentic System")
         logger.info(f"   Income: {fin.income}, Expenses: {expenses}, Debt: {fin.debt}")
 
@@ -47,6 +57,10 @@ async def analyze(fin: FinanceInput):
         # CrewAI handles ALL agent coordination automatically
         results = orchestrator.analyze_finances(user_data)
         
+        # 🚨 CHECK FINAL RESULTS
+        if 'budget_plan' in results and 'recommended_monthly_savings' in results['budget_plan']:
+            logger.info(f"🎯 FINAL - Recommended Savings: ₹{results['budget_plan']['recommended_monthly_savings']}")
+        
         logger.info("✅ CrewAI Agentic Analysis Completed!")
         logger.info("   🤖 Budget Analyst → Investment Advisor → Debt Specialist → Expense Optimizer")
         
@@ -56,7 +70,6 @@ async def analyze(fin: FinanceInput):
         logger.error(f"❌ Error in CrewAI analysis: {e}")
         # Fallback to direct function calls if CrewAI fails
         return await fallback_analysis(fin)
-
 @app.get("/")
 async def root():
     return {"message": "Finance AI with CrewAI - Agentic System"}
@@ -70,36 +83,50 @@ async def test_endpoint():
     return {"message": "Test endpoint working"}
 
 # FALLBACK - Only used if CrewAI fails
+# FALLBACK - Only used if CrewAI fails
 async def fallback_analysis(fin: FinanceInput):
     """Fallback using direct agent calls if CrewAI fails"""
     logger.info("🔄 CrewAI failed, using fallback analysis...")
     
     try:
-        from agents.budget_agent import analyze_budget  # ← CHANGED
-        from agents.expenses_agent import optimize_expenses  # ← CHANGED
-        from agents.investment_agent import suggest_investments  # ← CHANGED
-        from agents.debt_agent import plan_debt_repayment  # ← CHANGED
-        from agents.health_agent import financial_health_score  # ← CHANGED
+        from agents.budget_agent import analyze_budget
+        from agents.expenses_agent import optimize_expenses
+        from agents.investment_agent import suggest_investments
+        from agents.debt_agent import plan_debt_repayment
+        from agents.health_agent import financial_health_score
         
         expenses = dict(fin.expenses or {})
         total_expenses = sum(expenses.values())
-        monthly_investable = max(0.0, fin.income - total_expenses - (fin.debt or 0))
-
-        # Direct function calls (old way)
+        actual_savings = fin.income - total_expenses
+        
+        # 🚨 DEBUG: Check what's happening
+        logger.info(f"🔍 FALLBACK DEBUG:")
+        logger.info(f"🔍 Income: ₹{fin.income}")
+        logger.info(f"🔍 Expenses: ₹{total_expenses}")
+        logger.info(f"🔍 Actual Savings: ₹{actual_savings}")
+        
+        # Call all agents
         budget = analyze_budget(fin.income, expenses, fin.savings_goal)
-        expense_opts = optimize_expenses(expenses)
-        invest = suggest_investments(fin.risk_level, monthly_investable)
-        debt_plan = plan_debt_repayment(fin.debt, fin.income)
+        expense_opts = optimize_expenses(expenses)  # ✅ Fixed variable name
+        invest = suggest_investments(fin.risk_level, actual_savings)  # ✅ Fixed variable name
+        debt_plan = plan_debt_repayment(fin.debt, fin.income)  # ✅ Fixed variable name
         health = financial_health_score(fin.income, expenses, fin.debt, fin.savings_goal)
+        
+        # 🚨 DEBUG: Check what the budget agent returned
+        logger.info(f"🔍 Budget Agent Returned: ₹{budget.get('recommended_monthly_savings')}")
+        
+        # 🚨 FORCE THE CORRECT VALUE
+        budget["recommended_monthly_savings"] = float(actual_savings)
+        logger.info(f"🚨 FORCED CORRECTION: ₹{actual_savings}")
         
         # Ensure health is between 0-100
         health = max(0, min(int(health) if isinstance(health, (int, float)) else 70, 100))
         
         return {
             "budget_plan": budget,
-            "expense_optimizations": expense_opts,
-            "investment_plan": invest,
-            "debt_plan": debt_plan,
+            "expense_optimizations": expense_opts,  # ✅ Now defined
+            "investment_plan": invest,  # ✅ Now defined
+            "debt_plan": debt_plan,  # ✅ Now defined
             "financial_health_score": health,
             "crewai_used": False
         }
@@ -107,7 +134,7 @@ async def fallback_analysis(fin: FinanceInput):
     except Exception as e:
         logger.error(f"❌ Fallback also failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
+   
 # Add this for production deployment
 if __name__ == "__main__":
     import uvicorn

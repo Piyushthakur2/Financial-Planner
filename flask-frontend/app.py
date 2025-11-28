@@ -105,8 +105,12 @@ def analyze_finances():
 def transform_backend_response(backend_data, income, expenses_dict, debt):
     """Transform backend response to match frontend expected structure"""
     
-    # Calculate total expenses
+    # Calculate total expenses and ACTUAL SAVINGS
     total_expenses = sum(expenses_dict.values()) if expenses_dict else 0
+    actual_savings = income - total_expenses
+    savings_rate = (actual_savings / income) * 100 if income > 0 else 0
+    
+    print(f"🔍 TRANSFORM DEBUG - Income: ₹{income}, Expenses: ₹{total_expenses}, Savings: ₹{actual_savings} ({savings_rate:.1f}%)")
     
     # Use backend calculations if available, otherwise calculate properly
     needs_percentage = backend_data.get('needs_percentage')
@@ -125,16 +129,27 @@ def transform_backend_response(backend_data, income, expenses_dict, debt):
             wants_percentage = 30
             savings_percentage = 20
     
-    # Get recommended savings from backend or calculate
-    recommended_savings = backend_data.get('recommended_monthly_savings', income * 0.2)
+    # 🎯 KEY FIX: Use ACTUAL savings, not 20% rule
+    recommended_savings = backend_data.get('recommended_monthly_savings', actual_savings)
     
-    # Get tips from backend or use defaults
-    backend_tips = backend_data.get('tips', [])
-    if not backend_tips:
+    # Smart tips based on actual savings rate
+    if savings_rate > 50:
         backend_tips = [
-            "Start with small savings goals",
-            "Track your expenses regularly",
-            f"Aim to save at least 20% of your income (₹{income * 0.2:,.0f})"
+            f"Exceptional! You're saving {savings_rate:.1f}% of your income (₹{actual_savings:,.0f})",
+            "Consider investing your substantial savings for better returns",
+            "You're saving much more than the typical 20% target"
+        ]
+    elif savings_rate >= 20:
+        backend_tips = [
+            f"Good job! You're saving {savings_rate:.1f}% of your income",
+            "You're meeting or exceeding savings goals",
+            "Consider automating your investments"
+        ]
+    else:
+        backend_tips = [
+            f"Current savings: {savings_rate:.1f}% (₹{actual_savings:,.0f})",
+            "Aim to increase savings gradually",
+            "Review expenses for optimization opportunities"
         ]
     
     # Create the structure your frontend expects
@@ -150,7 +165,7 @@ def transform_backend_response(backend_data, income, expenses_dict, debt):
                 "wants": 30,
                 "savings": 20
             },
-            "recommended_monthly_savings": recommended_savings,
+            "recommended_monthly_savings": recommended_savings,  # 🎯 This will be correct now
             "tips": backend_tips
         },
         "investment_plan": {
@@ -158,25 +173,25 @@ def transform_backend_response(backend_data, income, expenses_dict, debt):
                 {
                     "asset": "Emergency Fund",
                     "allocation%": 20,
-                    "amount": income * 0.2 * 6,
+                    "amount": total_expenses * 4,  # 4 months expenses
                     "notes": "Liquid cash for emergencies"
                 },
                 {
                     "asset": "Index Funds",
                     "allocation%": 40,
-                    "amount": recommended_savings * 0.4,
+                    "amount": recommended_savings * 0.4,  # Based on ACTUAL savings
                     "notes": "Diversified stock market investment"
                 },
                 {
                     "asset": "Bonds",
                     "allocation%": 30,
-                    "amount": recommended_savings * 0.3,
+                    "amount": recommended_savings * 0.3,  # Based on ACTUAL savings
                     "notes": "Fixed income for stability"
                 },
                 {
                     "asset": "Real Estate",
                     "allocation%": 10,
-                    "amount": recommended_savings * 0.1,
+                    "amount": recommended_savings * 0.1,  # Based on ACTUAL savings
                     "notes": "Real estate investment trusts"
                 }
             ]),
@@ -198,14 +213,18 @@ def transform_backend_response(backend_data, income, expenses_dict, debt):
             }
         ]),
         "debt_plan": {
-            "status": backend_data.get('debt_plan', {}).get('status', 'Good' if debt == 0 or (debt / income) < 0.3 else 'Needs Attention'),
-            "estimated_months_to_clear": backend_data.get('debt_plan', {}).get('estimated_months_to_clear', 12 if debt > 0 else 0),
-            "recommended_strategy": backend_data.get('debt_plan', {}).get('recommended_strategy', 'Snowball method' if debt > 0 else 'No debt - maintain good habits')
+            "status": backend_data.get('debt_plan', {}).get('status', 'Excellent - Debt Free!' if debt == 0 else 'Manageable Debt'),
+            "estimated_months_to_clear": backend_data.get('debt_plan', {}).get('estimated_months_to_clear', 0 if debt == 0 else max(6, int(debt / (income * 0.15)))),
+            "recommended_strategy": backend_data.get('debt_plan', {}).get('recommended_strategy', 'Maintain your debt-free financial health!' if debt == 0 else 'Focus on high-interest debt first')
         },
-        "financial_health_score": backend_data.get('financial_health_score', 75)
+        "financial_health_score": backend_data.get('financial_health_score', min(100, max(40, 70 + (savings_rate * 0.3))))
     }
     
+    print(f"✅ TRANSFORM COMPLETE - Final savings: ₹{results['budget_plan']['recommended_monthly_savings']}")
+    
     return results
+
+    
 def generate_fallback_analysis(data):
     """Generate basic analysis when backend is unavailable - matches frontend structure"""
     
@@ -216,9 +235,10 @@ def generate_fallback_analysis(data):
     
     # Calculate total expenses
     total_expenses = sum(expenses_dict.values()) if expenses_dict else 0
+    actual_savings = income - total_expenses
+    savings_rate = (actual_savings / income) * 100 if income > 0 else 0
     
-    savings = income - total_expenses
-    savings_rate = (savings / income) * 100 if income > 0 else 0
+    print(f"🚨 FALLBACK ACTIVATED - Income: ₹{income}, Expenses: ₹{total_expenses}, Savings: ₹{actual_savings}")
     
     # Risk-based portfolio adjustment
     risk_multiplier = 1.0
@@ -227,59 +247,72 @@ def generate_fallback_analysis(data):
     elif risk_level == 'Low':
         risk_multiplier = 0.7
 
-    # Ensure ALL required fields are present
+    # Smart tips based on actual situation
+    if savings_rate > 50:
+        tips = [
+            f"Exceptional! You're saving {savings_rate:.1f}% of your income (₹{actual_savings:,.0f})",
+            "Consider investing your substantial savings",
+            "You're saving much more than typical targets"
+        ]
+    elif savings_rate >= 20:
+        tips = [
+            f"Good job! You're saving {savings_rate:.1f}% of your income",
+            "You're meeting savings goals",
+            "Consider automating investments"
+        ]
+    else:
+        tips = [
+            f"Current savings: {savings_rate:.1f}% (₹{actual_savings:,.0f})",
+            "Aim to increase savings gradually",
+            "Review expenses for optimization"
+        ]
+
     return {
         "budget_plan": {
             "current_allocation": {
-                "needs_percentage": 60,
-                "wants_percentage": 25,
-                "savings_percentage": 15
+                "needs_percentage": (total_expenses / income) * 100 if income > 0 else 60,
+                "wants_percentage": 0,
+                "savings_percentage": savings_rate
             },
             "recommended_allocation_50_30_20": {
                 "needs": 50,
                 "wants": 30,
                 "savings": 20
             },
-            "recommended_monthly_savings": max(savings, income * 0.2),
-            "tips": [
-                "Note: Using fallback analysis (AI quota exceeded)",
-                f"Your current savings: ₹{savings:,.0f} ({savings_rate:.1f}% of income)",
-                "Aim to save at least 20% of your income",
-                "Track expenses using budgeting apps"
-            ]
+            "recommended_monthly_savings": actual_savings,  # 🎯 Just actual savings
+            "tips": tips
         },
         "investment_plan": {
             "portfolio": [
                 {
                     "asset": "Emergency Fund",
                     "allocation%": 20,
-                    "amount": income * 3,
+                    "amount": total_expenses * 4,  # 4 months expenses
                     "notes": "Priority: 3-6 months living expenses"
                 },
                 {
                     "asset": "Stock Index Funds",
                     "allocation%": int(40 * risk_multiplier),
-                    "amount": savings * 0.4 * risk_multiplier,
+                    "amount": actual_savings * 0.4 * risk_multiplier,  # Based on ACTUAL savings
                     "notes": "Diversified equities based on your risk level"
                 },
                 {
                     "asset": "Bonds / Fixed Income",
                     "allocation%": int(30 / risk_multiplier),
-                    "amount": savings * 0.3 / risk_multiplier,
+                    "amount": actual_savings * 0.3 / risk_multiplier,  # Based on ACTUAL savings
                     "notes": "Stable investments for balance"
                 },
                 {
-                    "asset": "Debt Repayment",
+                    "asset": "Real Estate / Other",
                     "allocation%": 10,
-                    "amount": debt,
-                    "notes": "Focus on high-interest debt first"
+                    "amount": actual_savings * 0.1,  # Based on ACTUAL savings
+                    "notes": "Diversification assets"
                 }
             ],
             "important_considerations": [
-                "Fallback analysis due to AI service limits",
-                f"Risk level considered: {risk_level}",
-                "Rebalance portfolio annually",
-                "Consider tax-advantaged accounts"
+                "Fallback analysis - AI service unavailable",
+                f"Risk level: {risk_level}",
+                "Rebalance portfolio annually"
             ]
         },
         "expense_optimizations": [
@@ -292,19 +325,14 @@ def generate_fallback_analysis(data):
                 "action": "Meal planning & cooking at home",
                 "estimated_savings": total_expenses * 0.08,
                 "reason": "Reduce dining out and food waste"
-            },
-            {
-                "action": "Energy efficiency improvements",
-                "estimated_savings": total_expenses * 0.05,
-                "reason": "Lower utility bills with smart usage"
             }
         ],
         "debt_plan": {
-            "status": "Excellent" if debt == 0 else "Good" if debt < income * 0.3 else "Needs Attention",
-            "estimated_months_to_clear": max(6, int(debt / (income * 0.1))) if debt > 0 else 0,
-            "recommended_strategy": "No debt - maintain good habits" if debt == 0 else "Avalanche method: target highest interest debt first"
+            "status": "Excellent - Debt Free!" if debt == 0 else "Manageable Debt",
+            "estimated_months_to_clear": 0,
+            "recommended_strategy": "Maintain your debt-free financial health!" if debt == 0 else "Focus on high-interest debt first"
         },
-        "financial_health_score": min(95, max(30, int(50 + (savings_rate * 0.5) - (debt/income * 20))))
+        "financial_health_score": min(100, max(40, 70 + (savings_rate * 0.3)))
     }
 
 @app.route('/health')
