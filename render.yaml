@@ -5,7 +5,7 @@ services:
     env: python
     plan: free
     buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -18,7 +18,7 @@ services:
     env: python
     plan: free
     buildCommand: cd flask-frontend && pip install -r requirements.txt
-    startCommand: cd backend && uvicorn main:app --reload --reload-dir backend --host 0.0.0.0 --port $PORT
+    startCommand: cd flask-frontend && python app.py 
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
