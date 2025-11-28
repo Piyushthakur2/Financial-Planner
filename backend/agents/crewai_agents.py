@@ -1,5 +1,5 @@
 from crewai import Agent, Task, Crew, Process
-from langchain.tools import Tool
+from langchain_core.tools import Tool
 import json
 import os
 import sys
