@@ -1,5 +1,5 @@
 from typing import Optional
-from ..gemini_client import gemini_generate  # Correct import for subdirectory
+from gemini_client import gemini_generate  # Correct import for subdirectory
 import json
 import re
 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from backend.models import FinanceInput  # ← FIXED: Add backend prefix
-from backend.agents.crewai_orchestrator import FinancialCrewOrchestrator  # ← FIXED: Add backend prefix
+from models import FinanceInput  # ← CHANGED
+from agents.crewai_orchestrator import FinancialCrewOrchestrator  # ← CHANGED
 import os
 import logging
 
@@ -75,11 +75,11 @@ async def fallback_analysis(fin: FinanceInput):
     logger.info("🔄 CrewAI failed, using fallback analysis...")
     
     try:
-        from backend.agents.budget_agent import analyze_budget  # ← FIXED: Add backend prefix
-        from backend.agents.expenses_agent import optimize_expenses  # ← FIXED: Add backend prefix
-        from backend.agents.investment_agent import suggest_investments  # ← FIXED: Add backend prefix
-        from backend.agents.debt_agent import plan_debt_repayment  # ← FIXED: Add backend prefix
-        from backend.agents.health_agent import financial_health_score  # ← FIXED: Add backend prefix
+        from agents.budget_agent import analyze_budget  # ← CHANGED
+        from agents.expenses_agent import optimize_expenses  # ← CHANGED
+        from agents.investment_agent import suggest_investments  # ← CHANGED
+        from agents.debt_agent import plan_debt_repayment  # ← CHANGED
+        from agents.health_agent import financial_health_score  # ← CHANGED
         
         expenses = dict(fin.expenses or {})
         total_expenses = sum(expenses.values())

@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from ..gemini_client import gemini_generate
+from gemini_client import gemini_generate
 import json
 import re
 
