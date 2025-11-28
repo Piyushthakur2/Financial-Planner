@@ -8,3 +8,5 @@ requests
 google-generativeai
 crewai
 langchain-core
+langchain
+langchain-community
